@@ -1,1 +1,6 @@
+# .gitignore — never commit game payload files
+files/*
+!files/README.txt
+*.zip
 Backup/
+dist/
