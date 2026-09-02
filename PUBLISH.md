@@ -1,27 +1,39 @@
-# Publish this repository to GitHub
+# Publish to GitHub
 
-The Cloud Agent token cannot create new repositories on your account. Create the repo once, then push:
+Full package is also on **Gameloop-Fix** branch `export/gameloop-keymapping-fix` if you need it.
 
-## Option A — GitHub website
+## One-time sync (your PC — uses your GitHub login)
 
-1. Go to https://github.com/new
-2. Repository name: **Gameloop-Keymapping-Fix**
-3. Public, **no** README / .gitignore (already in this folder)
-4. Create repository
-5. In this folder run:
+Cloud Agent cannot push to this repo until **Cursor** or your **PAT** has write access here.
 
 ```bash
-git remote add origin https://github.com/sedaimanish/Gameloop-Keymapping-Fix.git
-git push -u origin main
-```
-
-## Option B — GitHub CLI (on your PC)
-
-```bash
+git clone https://github.com/sedaimanish/Gameloop-Keymapping-Fix.git
 cd Gameloop-Keymapping-Fix
-gh repo create sedaimanish/Gameloop-Keymapping-Fix --public --source=. --remote=origin --push
+git fetch https://github.com/sedaimanish/Gameloop-Fix.git export/gameloop-keymapping-fix
+git reset --hard FETCH_HEAD
+git push origin main --force
 ```
 
-After push, clients can run `client/Install-GameloopFix.bat` — it downloads from:
+Or with GitHub CLI (already logged in as you):
+
+```bash
+gh repo clone sedaimanish/Gameloop-Keymapping-Fix
+cd Gameloop-Keymapping-Fix
+git fetch https://github.com/sedaimanish/Gameloop-Fix.git export/gameloop-keymapping-fix
+git reset --hard FETCH_HEAD
+git push origin main --force
+```
+
+## Grant Cloud Agent push access (optional)
+
+GitHub → **Settings** → **Applications** → **Cursor** → **Repository access** → add **Gameloop-Keymapping-Fix**.
+
+Then a future agent run can `git push` directly.
+
+## After push
+
+Clients download from:
 
 `https://raw.githubusercontent.com/sedaimanish/Gameloop-Keymapping-Fix/main/Patched-Files/`
+
+Run `client/Install-GameloopFix.bat` as Administrator.
