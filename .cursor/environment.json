@@ -1,0 +1,4 @@
+{
+  "name": "GameLoop Keymapping Fix",
+  "install": "bash scripts/cloud-agent-install.sh"
+}
