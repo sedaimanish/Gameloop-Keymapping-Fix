@@ -505,8 +505,8 @@ Write-Host '  Made by MANISH SEDAI  |  sedaimanish.vercel.app' -Fore Gray
 if ($UIFolder) { Write-Host ("  UI folder: $UIFolder") -Fore Gray } else { Write-Host '  UI folder: NOT FOUND' -Fore Red }
 
 $menu = Read-Choice -Prompt 'MAIN MENU' -Default '1' -Options @{
-    '1' = 'Full install (download + keymaps + hosts + delete TVM + GameLoop tweaks)'
-    '2' = 'GameLoop tweaks only (registry, no file download)'
+    '1' = 'Optimize keymapping'
+    '2' = 'GameLoop tweaks'
     '3' = 'Restore backup'
     '4' = 'Exit'
 }
