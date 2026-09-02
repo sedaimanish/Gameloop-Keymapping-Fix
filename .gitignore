@@ -1,6 +1,1 @@
-.build/
-__pycache__/
-*.pyc
-client/Backup/
-dist/
-Patched-Files/
+Backup/
