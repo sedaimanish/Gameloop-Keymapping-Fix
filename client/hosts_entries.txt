@@ -1,0 +1,3 @@
+127.0.0.1 conf.syzs.qq.com
+127.0.0.1 pm.myapp.com
+127.0.0.1 unifiedaccess.gameloop.com
