@@ -90,6 +90,7 @@ $PkgMap = [ordered]@{
     'BGMI'    = @('com.pubg.imobile')
 }
 $AlwaysTwin = @('com.pubg.krmobile')
+$AllVersionKeys = @('Global', 'Korean', 'Taiwan', 'Vietnam', 'BGMI')
 
 # ==================== PROCESS CONTROL ====================
 function Stop-GameLoop {
@@ -288,23 +289,62 @@ function Download-Payload {
     }
 }
 
-# ==================== CONFIG WIZARD ====================
-function Select-Versions {
-    $vc = Read-Choice -Prompt 'PUBG version' -Default '1' -Options @{
-        '1' = 'Global   (com.tencent.ig)'
-        '2' = 'Korean   (com.pubg.krmobile)'
-        '3' = 'Taiwan   (com.pubg.twmobile)'
-        '4' = 'Vietnam  (com.vng.pubgmobile)'
-        '5' = 'BGMI     (com.pubg.imobile)'
-        '6' = 'ALL versions'
+# ==================== KEYMAP PATCH (before install) ====================
+function Set-KeymapSmartModeDefault {
+    param(
+        [string]$KeymapPath,
+        [string]$ModeId
+    )
+    $text = [IO.File]::ReadAllText($KeymapPath)
+    $pattern = '(?s)(<(Item|ItemEx)\s+ApkName="([^"]+)"[^>]*>)(.*?)(</\2>)'
+    $regex = New-Object System.Text.RegularExpressions.Regex $pattern
+    $evaluator = {
+        param($m)
+        $pkg = $m.Groups[3].Value
+        if ($pkg -notmatch '^com\.(?:tencent\.ig|tencent\.tmgp\.pubgm|pubg\.|vng\.|rekoo\.)') { return $m.Value }
+        $modeId = $m.ModeId
+        $inner = $m.Groups[4].Value
+        $inner = [regex]::Replace($inner, '(<LastMode[^>]*?)ModeID="[0-9]+"', ('${1}ModeID="' + $modeId + '"'))
+        $inner = [regex]::Replace($inner, '(<Switch Name="SetUp"[^>]*ModeID=")[0-9]+(")', ('${1}' + $modeId + '${2}'))
+        $inner = $inner -creplace '(<LastMode[^>]*?)EnableGameKeyDT="0"', '${1}EnableGameKeyDT="1"'
+        return $m.Groups[1].Value + $inner + $m.Groups[5].Value
     }
-    switch ($vc) {
-        '1' { return @('Global') }
-        '2' { return @('Korean') }
-        '3' { return @('Taiwan') }
-        '4' { return @('Vietnam') }
-        '5' { return @('BGMI') }
-        '6' { return @('Global', 'Korean', 'Taiwan', 'Vietnam', 'BGMI') }
+    $wrapped = { param($m) & $evaluator $m }.GetNewClosure()
+    # Pass ModeId into evaluator via a simple loop instead (PS 5.1 safe)
+    $sb = New-Object System.Text.StringBuilder
+    $last = 0
+    foreach ($match in $regex.Matches($text)) {
+        [void]$sb.Append($text.Substring($last, $match.Index - $last))
+        $pkg = $match.Groups[3].Value
+        if ($pkg -match '^com\.(?:tencent\.ig|tencent\.tmgp\.pubgm|pubg\.|vng\.|rekoo\.)') {
+            $inner = $match.Groups[4].Value
+            $inner = [regex]::Replace($inner, '(<LastMode[^>]*?)ModeID="[0-9]+"', ('${1}ModeID="' + $ModeId + '"'))
+            $inner = [regex]::Replace($inner, '(<Switch Name="SetUp"[^>]*ModeID=")[0-9]+(")', ('${1}' + $ModeId + '${2}'))
+            $inner = $inner -creplace '(<LastMode[^>]*?)EnableGameKeyDT="0"', '${1}EnableGameKeyDT="1"'
+            [void]$sb.Append($match.Groups[1].Value + $inner + $match.Groups[5].Value)
+        } else {
+            [void]$sb.Append($match.Value)
+        }
+        $last = $match.Index + $match.Length
+    }
+    [void]$sb.Append($text.Substring($last))
+    [IO.File]::WriteAllText($KeymapPath, $sb.ToString())
+}
+
+# ==================== CONFIG WIZARD ====================
+function Get-AllPackages {
+    return Get-Packages -Versions $AllVersionKeys
+}
+function Select-SmartMode {
+    $rc = Read-Choice -Prompt 'Smart keymap mode (game definition)' -Default '2' -Options @{
+        '1' = 'Smart 720P'
+        '2' = 'Smart 1080P'
+        '3' = 'Smart 2K'
+    }
+    switch ($rc) {
+        '1' { return [pscustomobject]@{ Name = 'Smart 720P'; ModeID = '2' } }
+        '2' { return [pscustomobject]@{ Name = 'Smart 1080P'; ModeID = '3' } }
+        '3' { return [pscustomobject]@{ Name = 'Smart 2K'; ModeID = '4' } }
     }
 }
 function Select-Definition {
@@ -319,9 +359,8 @@ function Select-Definition {
         '3' { return [pscustomobject]@{ Hex = '2'; Name = '1440P'; ModeID = '4' } }
     }
 }
-function Invoke-ConfigWizard {
-    $vers = Select-Versions
-    $pkgs = Get-Packages -Versions $vers
+function Invoke-TweaksWizard {
+    $pkgs = Get-AllPackages
     $def  = Select-Definition
     $eng = Read-Choice -Prompt 'Render engine' -Default '1' -Options @{
         '1' = 'DirectX+'; '2' = 'OpenGL+'
@@ -381,7 +420,7 @@ function Invoke-ConfigWizard {
         }
     }
     return [pscustomobject]@{
-        Versions = $vers; Packages = $pkgs; Definition = $def
+        Versions = $AllVersionKeys; Packages = $pkgs; Definition = $def
         EngHex = $engHex; FpsHex = $fpsHex; GqHex = $gqHex; AaHex = $aaHex
         CoreHex = $coreHex; RamHex = $ramHex; DpiHex = $dpiHex
         WHex = $wHex; HHex = $hHex
@@ -438,8 +477,8 @@ function Remove-TvmFile {
 }
 
 function Invoke-FullInstall {
-    Write-Title 'GameLoop settings'
-    $cfg = Invoke-ConfigWizard
+    Write-Title 'Smart keymap mode'
+    $smart = Select-SmartMode
     Write-Title 'Installing patched keymaps'
     Write-Host '   Stopping GameLoop...' -Fore Yellow
     $killed = Stop-GameLoop
@@ -447,25 +486,28 @@ function Invoke-FullInstall {
     New-Item -ItemType Directory -Path $WorkDir -Force | Out-Null
     Write-Host '   Downloading patched files from GitHub...' -Fore Yellow
     Download-Payload -DestDir $WorkDir
+    $keymapPath = Join-Path $WorkDir 'DefaultKeyMapping.xml'
+    Write-Host ("   Setting default LastMode -> ModeID $($smart.ModeID) ($($smart.Name))...") -Fore Yellow
+    Set-KeymapSmartModeDefault -KeymapPath $keymapPath -ModeId $smart.ModeID
+    Write-Host "   [$($G.OK)] DefaultKeyMapping.xml updated for all PUBG versions" -Fore Green
     Install-PatchedFiles -SourceDir $WorkDir
     Remove-TvmFile
     Write-Host '   Updating hosts file...' -Fore Yellow
     Update-HostsFile
-    Write-Host '   Writing GameLoop registry...' -Fore Yellow
-    Apply-RegistryConfig -Cfg $cfg
     try { Remove-Item -LiteralPath $WorkDir -Recurse -Force -ErrorAction SilentlyContinue } catch { }
     Write-Host ''
     Write-Host '   ALL DONE. Relaunch GameLoop.' -Fore Cyan
-    Write-Host ("   Versions: " + ($cfg.Versions -join ', ') + "  |  " + $cfg.Definition.Name) -Fore Gray
-    Write-Host '   Backup saved in client\Backup\' -Fore Gray
+    Write-Host ("   Smart mode: $($smart.Name)  |  All PUBG versions") -Fore Gray
+    Write-Host '   Backup saved in Backup\' -Fore Gray
 }
 
 function Invoke-ConfigOnly {
-    Write-Title 'GameLoop settings only'
+    Write-Title 'GameLoop tweaks'
     Stop-GameLoop | Out-Null
-    $cfg = Invoke-ConfigWizard
+    $cfg = Invoke-TweaksWizard
     Apply-RegistryConfig -Cfg $cfg
-    Write-Host ''; Write-Host '   Registry updated. Relaunch GameLoop.' -Fore Cyan
+    Write-Host ''; Write-Host '   Registry updated for all PUBG versions. Relaunch GameLoop.' -Fore Cyan
+    Write-Host ("   Definition: $($cfg.Definition.Name)") -Fore Gray
 }
 
 function Invoke-Restore {
