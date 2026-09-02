@@ -14,11 +14,11 @@ param()
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 1.0
 
-# --- GitHub payload (edit repo/branch if you fork) ---
-$GithubOwner   = 'sedaimanish'
-$GithubRepo    = 'Gameloop-Keymapping-Fix'
-$GithubBranch  = 'main'
-$PayloadFolder = 'Patched-Files'
+# --- GitHub release payload (edit repo if you fork) ---
+$GithubOwner      = 'sedaimanish'
+$GithubRepo       = 'Gameloop-Keymapping-Fix'
+$GithubReleaseTag = ''   # empty = latest release; or pin e.g. 'v1.0.0'
+$PayloadAssetName = 'gameloop-fix-payload.zip'
 
 $PayloadFiles = @(
     'DefaultKeyMapping.xml'
@@ -249,29 +249,42 @@ function Update-HostsFile {
 }
 
 # ==================== DOWNLOAD ====================
-function Get-GithubRawUrl {
-    param([string]$FileName)
-    $path = "$PayloadFolder/$FileName" -replace '\\', '/'
-    return "https://raw.githubusercontent.com/$GithubOwner/$GithubRepo/$GithubBranch/$path"
+function Get-ReleaseDownloadUrl {
+    param([string]$AssetName)
+    $headers = @{ 'User-Agent' = 'GameloopFix-Installer' }
+    if ($GithubReleaseTag) {
+        $uri = "https://api.github.com/repos/$GithubOwner/$GithubRepo/releases/tags/$GithubReleaseTag"
+    } else {
+        $uri = "https://api.github.com/repos/$GithubOwner/$GithubRepo/releases/latest"
+    }
+    $release = Invoke-RestMethod -Uri $uri -Headers $headers -UseBasicParsing
+    $asset = @($release.assets | Where-Object { $_.name -eq $AssetName })[0]
+    if (-not $asset) {
+        throw "Release asset '$AssetName' not found on $($release.tag_name). Publish a release first."
+    }
+    return [string]$asset.browser_download_url
 }
 function Download-Payload {
     param([string]$DestDir)
     New-Item -ItemType Directory -Path $DestDir -Force | Out-Null
-    $base = "https://raw.githubusercontent.com/$GithubOwner/$GithubRepo/$GithubBranch/$PayloadFolder"
-    Write-Host "   Source: $base" -Fore Gray
+    $zipPath = Join-Path $env:TEMP ("GLPayload_" + (Get-Date -Format 'yyyyMMdd_HHmmss') + '.zip')
+    Write-Host '   Fetching patched files from GitHub Release...' -Fore Yellow
+    $url = Get-ReleaseDownloadUrl -AssetName $PayloadAssetName
+    Write-Host "   Source: $url" -Fore Gray
+    try {
+        Invoke-WebRequest -Uri $url -OutFile $zipPath -UseBasicParsing -Headers @{ 'User-Agent' = 'GameloopFix-Installer' }
+        $zipKb = [int]((Get-Item -LiteralPath $zipPath).Length / 1024)
+        if ($zipKb -lt 10) { throw 'download too small' }
+        Write-Host "   Downloaded payload ($zipKb KB)" -Fore Green
+        Expand-Archive -LiteralPath $zipPath -DestinationPath $DestDir -Force
+    } finally {
+        Remove-Item -LiteralPath $zipPath -Force -ErrorAction SilentlyContinue
+    }
     foreach ($name in $PayloadFiles) {
-        $url = Get-GithubRawUrl $name
         $out = Join-Path $DestDir $name
-        Write-Host "   Downloading $name ..." -NoNewline
-        try {
-            Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing
-            $kb = [int]((Get-Item -LiteralPath $out).Length / 1024)
-            if ($kb -lt 1) { throw 'file too small' }
-            Write-Host " OK ($kb KB)" -Fore Green
-        } catch {
-            Write-Host " FAILED" -Fore Red
-            throw "Download failed for $name from $url"
-        }
+        if (-not (Test-Path -LiteralPath $out)) { throw "Payload zip missing file: $name" }
+        $kb = [int]((Get-Item -LiteralPath $out).Length / 1024)
+        Write-Host "   [$($G.OK)] $name ($kb KB)" -Fore Green
     }
 }
 

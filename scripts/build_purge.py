@@ -208,7 +208,7 @@ def validate_pubg_preserved(source_keymap: str, purged_keymap: str) -> list[str]
 def build() -> None:
     if OUTPUT.exists():
         shutil.rmtree(OUTPUT)
-    OUTPUT.mkdir()
+    OUTPUT.mkdir(parents=True, exist_ok=True)
 
     shutil.copy2(SOURCE / "AEngine.dll", OUTPUT / "AEngine.dll")
 

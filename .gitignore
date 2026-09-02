@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 client/Backup/
+dist/
+Patched-Files/

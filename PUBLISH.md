@@ -1,39 +1,29 @@
 # Publish to GitHub
 
-Full package is also on **Gameloop-Fix** branch `export/gameloop-keymapping-fix` if you need it.
+## Users (public)
 
-## One-time sync (your PC — uses your GitHub login)
+Published releases live at:
 
-Cloud Agent cannot push to this repo until **Cursor** or your **PAT** has write access here.
+https://github.com/sedaimanish/Gameloop-Keymapping-Fix/releases
 
-```bash
-git clone https://github.com/sedaimanish/Gameloop-Keymapping-Fix.git
-cd Gameloop-Keymapping-Fix
-git fetch https://github.com/sedaimanish/Gameloop-Fix.git export/gameloop-keymapping-fix
-git reset --hard FETCH_HEAD
-git push origin main --force
-```
+They download **`GameloopFix-Installer.zip`** only. The loader fetches **`gameloop-fix-payload.zip`** from the same release.
 
-Or with GitHub CLI (already logged in as you):
+## Maintainer (you)
 
-```bash
-gh repo clone sedaimanish/Gameloop-Keymapping-Fix
-cd Gameloop-Keymapping-Fix
-git fetch https://github.com/sedaimanish/Gameloop-Fix.git export/gameloop-keymapping-fix
-git reset --hard FETCH_HEAD
-git push origin main --force
-```
+1. `build_patched.bat`
+2. `pack_release.bat`
+3. `gh release create vX.Y.Z dist\GameloopFix-Installer.zip dist\gameloop-fix-payload.zip`
+4. `gh release create vX.Y.Z-builder --draft dist\GameloopFix-Builder.zip`
 
-## Grant Cloud Agent push access (optional)
+See **[MAINTAINER.md](MAINTAINER.md)** for full details.
+
+## Cloud Agent push access
 
 GitHub → **Settings** → **Applications** → **Cursor** → **Repository access** → add **Gameloop-Keymapping-Fix**.
 
-Then a future agent run can `git push` directly.
+## Legacy sync from Gameloop-Fix
 
-## After push
-
-Clients download from:
-
-`https://raw.githubusercontent.com/sedaimanish/Gameloop-Keymapping-Fix/main/Patched-Files/`
-
-Run `client/Install-GameloopFix.bat` as Administrator.
+```bash
+git fetch https://github.com/sedaimanish/Gameloop-Fix.git export/gameloop-keymapping-fix
+git reset --hard FETCH_HEAD
+```
