@@ -784,7 +784,7 @@ def build() -> None:
 
     if OUTPUT.exists():
         shutil.rmtree(OUTPUT)
-    OUTPUT.mkdir()
+    OUTPUT.mkdir(parents=True, exist_ok=True)
 
     keymap = (SOURCE / "DefaultKeyMapping.xml").read_text(
         encoding="utf-8", errors="replace"

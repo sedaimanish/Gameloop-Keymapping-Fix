@@ -1,88 +1,62 @@
 # GameLoop Keymapping Fix
 
-Separate package: **maintainer build** (Python) + **client install** (PowerShell only, no Python).
+**Users:** download the installer from [Releases](https://github.com/sedaimanish/Gameloop-Keymapping-Fix/releases/latest) — not from browsing repo source files.
 
-```
-Gameloop-Keymapping-Fix/
-├── Official-Files/       # INPUT — paste fresh GameLoop UI files after an update
-├── Patched-Files/        # OUTPUT — committed to GitHub; client downloads these
-├── Fixed-Assets/
-│   └── AEngine.dll       # YOUR fixed DLL (never overwritten by build)
-├── build_patched.py      # Maintainer: purge + optimize (needs Python 3)
-├── build_patched.bat
-├── scripts/              # Internal build steps
-└── client/               # Give this folder to end users
-    ├── Install-GameloopFix.bat
-    ├── Install-GameloopFix.ps1
-    └── hosts_entries.txt
-```
+| Who | What to download | Where |
+|-----|------------------|-------|
+| **Users** | `GameloopFix-Installer.zip` | [Releases](https://github.com/sedaimanish/Gameloop-Keymapping-Fix/releases/latest) (public) |
+| **Maintainer (you)** | `GameloopFix-Builder.zip` | Draft release on same repo (collaborators only) |
+
+Patched game files are **not** stored in the repo tree. The client loader fetches them from the latest GitHub Release at install time.
 
 ---
 
-## Maintainer — after a new GameLoop update
+## User install
 
-1. Close GameLoop.
-2. Copy from `C:\Program Files\TxGameAssistant\UI\` into **`Official-Files/`**:
-   - `DefaultKeyMapping.xml`
-   - `smk.conf`
-   - `smka.conf`
-   - `GameSidebar.xml`
-   - `translate.conf`
-   - `AEngine.dll` (stock — reference only; not used in patched output)
-3. Ensure **`Fixed-Assets/AEngine.dll`** is your patched DLL.
-4. Run:
+1. Download **`GameloopFix-Installer.zip`** from [Releases](https://github.com/sedaimanish/Gameloop-Keymapping-Fix/releases/latest).
+2. Extract anywhere.
+3. Right-click **`Install-GameloopFix.bat`** → **Run as administrator**.
+4. Choose **Full install**.
+5. Relaunch GameLoop and PUBG.
+
+No Python required.
+
+---
+
+## Maintainer — after a GameLoop update
+
+See **[MAINTAINER.md](MAINTAINER.md)** for the full workflow.
+
+Quick version:
+
+1. Paste fresh UI files into `Official-Files/`.
+2. Put your patched DLL in `Fixed-Assets/AEngine.dll`.
+3. Run `build_patched.bat`.
+4. Run `pack_release.bat` (or `python scripts/pack_release.py`).
+5. Publish:
    ```bat
-   build_patched.bat
+   gh release create v1.0.1 dist\GameloopFix-Installer.zip dist\gameloop-fix-payload.zip
+   gh release create v1.0.1-builder --draft dist\GameloopFix-Builder.zip
    ```
-   or `python3 build_patched.py`
-5. Check **`Patched-Files/`**, test locally, commit + push to GitHub.
 
-**Do not** hand-edit `Patched-Files/` — always rebuild from `Official-Files/`.
+Or push a tag `v1.0.1` and let GitHub Actions build + publish automatically.
 
 ---
 
-## Client — end user install
-
-1. Download the **`client/`** folder (or full repo).
-2. Right-click **`Install-GameloopFix.bat`** → **Run as administrator**.
-3. Choose **Full install**:
-   - GameLoop tweaks (FPS, resolution, CPU/RAM, engine, etc.)
-   - Downloads pre-patched files from GitHub
-   - Backs up originals → `client/Backup/`
-   - Replaces UI folder files
-   - **Deletes** `%APPDATA%\AndroidTbox\TVM_100.xml`
-   - Updates **hosts** file (telemetry block)
-4. Relaunch GameLoop and PUBG.
-
-No Python required on the client machine.
-
----
-
-## What the build applies
-
-Same optimizations as the main repo (`build_optimized_purged.py`):
-
-- PUBG-only purge, WheelSlip removed, instant swipes, plain V, F2, side button 2
-- Tips off, WASD speed 100, Tab LockEnemy stripped, Global ItemEx sync
-- `EnableSwitchViewLockMethod="0"`, RClick Shop1 fix, mouse-lock tag normalization
-- Fixed `AEngine.dll` from `Fixed-Assets/`
-
----
-
-## Repository
-
-Standalone repo: **https://github.com/sedaimanish/Gameloop-Keymapping-Fix**
-
-Client downloads from:
+## Repository layout (maintainer)
 
 ```
-https://raw.githubusercontent.com/sedaimanish/Gameloop-Keymapping-Fix/main/Patched-Files/
+Official-Files/     # INPUT — paste fresh GameLoop UI files
+Patched-Files/      # OUTPUT — local only (not committed); goes into release zip
+Fixed-Assets/       # YOUR fixed AEngine.dll
+build_patched.bat   # Build patched payload
+pack_release.bat    # Pack installer + payload + builder zips
+client/             # User loader (also inside GameloopFix-Installer.zip)
+scripts/            # Internal build steps
 ```
-
-Edit `$GithubOwner`, `$GithubRepo`, `$GithubBranch` at the top of `client/Install-GameloopFix.ps1` if you fork.
 
 ---
 
 ## If bag/mouse lock acts up after a PUBG season update
 
-Repair or redownload **HD resources in-game** first — texture detection affects bag lock. Then rebuild from new Official files if GameLoop shipped new `smk`/`DefaultKeyMapping`.
+Repair or redownload **HD resources in-game** first. Then rebuild from new Official files if GameLoop shipped new `smk`/`DefaultKeyMapping`.
