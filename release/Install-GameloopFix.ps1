@@ -16,6 +16,9 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 1.0
 
+try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch { }
+$ProgressPreference = 'SilentlyContinue'
+
 # --- GitHub release (edit if you fork) ---
 $GithubOwner      = 'sedaimanish'
 $GithubRepo       = 'Gameloop-Keymapping-Fix'
@@ -271,6 +274,21 @@ function Get-ReleaseDownloadUrl {
     }
     return [string]$asset.browser_download_url
 }
+function Download-ReleaseFile {
+    param(
+        [string]$Url,
+        [string]$OutFile
+    )
+    $headers = @{ 'User-Agent' = 'GameloopFix-Installer' }
+    $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
+    if ($curl) {
+        & curl.exe -fsSL --retry 3 --retry-delay 2 -A 'GameloopFix-Installer' -o $OutFile $Url
+        if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $OutFile) -and (Get-Item -LiteralPath $OutFile).Length -gt 1000) {
+            return
+        }
+    }
+    Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing -Headers $headers
+}
 function Download-Payload {
     param([string]$DestDir)
     New-Item -ItemType Directory -Path $DestDir -Force | Out-Null
@@ -279,7 +297,7 @@ function Download-Payload {
     $url = Get-ReleaseDownloadUrl -AssetName $PayloadAssetName
     Write-Host "   Source: $url" -Fore Gray
     try {
-        Invoke-WebRequest -Uri $url -OutFile $zipPath -UseBasicParsing -Headers @{ 'User-Agent' = 'GameloopFix-Installer' }
+        Download-ReleaseFile -Url $url -OutFile $zipPath
         $zipKb = [int]((Get-Item -LiteralPath $zipPath).Length / 1024)
         if ($zipKb -lt 10) { throw 'download too small' }
         Write-Host "   Downloaded payload ($zipKb KB)" -Fore Green
