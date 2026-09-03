@@ -2,9 +2,9 @@
 
 Download **only** the loader from [Releases](https://github.com/sedaimanish/Gameloop-Keymapping-Fix/releases/latest):
 
-### [Download GameloopFix-Loader.cmd](https://github.com/sedaimanish/Gameloop-Keymapping-Fix/releases/latest/download/GameloopFix-Loader.cmd)
+### [Download GameloopFix-Loader.bat](https://github.com/sedaimanish/Gameloop-Keymapping-Fix/releases/latest/download/GameloopFix-Loader.bat)
 
-1. Save `GameloopFix-Loader.cmd` anywhere
+1. Save `GameloopFix-Loader.bat` anywhere
 2. Right-click → **Run as administrator**
 3. Choose **Optimize keymapping** or **GameLoop tweaks**
 
