@@ -35,7 +35,13 @@ echo.
 echo [2/2] Starting installer...
 echo.
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%" -InstallRoot "%~dp0"
+REM Strip trailing backslash (fixes paths with spaces e.g. OneDrive\Gameloop Keymap\)
+set "INSTALLROOT=%~dp0"
+if "%INSTALLROOT:~-1%"=="\" set "INSTALLROOT=%INSTALLROOT:~0,-1%"
+set "GAMEFIX_INSTALLROOT=%INSTALLROOT%"
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy -Scope Process -Bypass -Force" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%"
 set "ERR=%ERRORLEVEL%"
 
 echo.
