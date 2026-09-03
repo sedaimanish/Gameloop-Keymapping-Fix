@@ -34,11 +34,11 @@ On Windows: select all 6 files → right-click → Send to → Compressed folder
 2. **Draft new release** or **Edit** the latest release
 3. Attach these assets:
    - `payload.zip` ← your working files from Gameloop-Fix
-   - `GameloopFix-Loader.cmd` ← from `release/` folder on `maintainer` branch (only when loader changed)
+   - `GameloopFix-Loader.bat` ← from `release/` folder on `maintainer` branch (only when loader changed)
    - `Install-GameloopFix.ps1` ← from `release/` folder (only when script changed)
 4. Publish release
 
-Users download **only** `GameloopFix-Loader.cmd`. The loader fetches the PS1 + payload from the same release.
+Users download **only** `GameloopFix-Loader.bat`. The loader fetches the PS1 + payload from the same release.
 
 ## Important
 

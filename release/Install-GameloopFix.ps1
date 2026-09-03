@@ -5,7 +5,7 @@
 #  No Python required. Downloads pre-patched files from GitHub,
 #  applies GameLoop registry tweaks, updates hosts, deletes TVM.
 #
-#  Run via GameloopFix-Loader.cmd (downloads this script from Releases).
+#  Run via GameloopFix-Loader.bat (downloads this script from Releases).
 # ============================================================
 
 [CmdletBinding()]
@@ -48,7 +48,7 @@ $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIden
 if (-not $isAdmin) {
     Write-Host ''
     Write-Host '   ERROR: Run as Administrator (required for hosts + Program Files).' -Fore Red
-    Write-Host '   Right-click GameloopFix-Loader.cmd -> Run as administrator' -Fore Yellow
+    Write-Host '   Right-click GameloopFix-Loader.bat -> Run as administrator' -Fore Yellow
     Read-Host '   Press Enter to exit'
     exit 1
 }
@@ -60,10 +60,26 @@ $G = @{
 }
 
 # ==================== PATHS ====================
-if ($InstallRoot -and (Test-Path -LiteralPath $InstallRoot)) {
-    $ClientDir = $InstallRoot.TrimEnd('\')
+function Normalize-InstallRoot {
+    param([string]$Root)
+    if ([string]::IsNullOrWhiteSpace($Root)) { return $null }
+    $r = $Root.Trim().Trim('"').TrimEnd('\')
+    if (-not $r) { return $null }
+    if (Test-Path -LiteralPath $r) { return $r }
+    return $null
+}
+
+if (-not $InstallRoot -and $env:GAMEFIX_INSTALLROOT) {
+    $InstallRoot = $env:GAMEFIX_INSTALLROOT
+}
+$resolvedRoot = Normalize-InstallRoot $InstallRoot
+if ($resolvedRoot) {
+    $ClientDir = $resolvedRoot
 } else {
-    $ClientDir = Split-Path -Parent $PSCommandPath
+    $ClientDir = Join-Path $env:USERPROFILE 'GameloopFix'
+    if (-not (Test-Path -LiteralPath $ClientDir)) {
+        New-Item -ItemType Directory -Path $ClientDir -Force | Out-Null
+    }
 }
 $BackupDir = Join-Path $ClientDir 'Backup'
 $Manifest  = Join-Path $BackupDir 'backup_manifest.txt'
